@@ -143,7 +143,6 @@ fail_images/**
 CPF_checkpoints/**
 CPF_checkpoints
 *.json
-*.png
 
 render/YCB_Affordance/**
 
