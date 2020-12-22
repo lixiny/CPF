@@ -1,0 +1,34 @@
+name: cpf
+
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - defaults
+
+dependencies:
+  - pip=20.0.2
+  - numpy>=1.18
+  - matplotlib~=3.1.3
+  - scipy>=0.19.1
+  - pillow~=7.1.2
+  - pytorch~=1.6.0
+  - torchvision~=0.7.0
+  - setuptools~=46.2.0
+  - tqdm
+  - cython=0.29.21
+  - pip:
+      - -i https://pypi.tuna.tsinghua.edu.cn/simple
+      - git+https://github.com/utiasSTARS/liegroups.git
+      - trimesh==3.8.10
+      - open3d==0.10.0.0
+      - pyrender==0.1.43
+      - scikit-learn==0.23.2
+      - chumpy==0.69
+      - opencv-contrib-python==4.2.0.34
+      - opendr==0.78
+      - termcolor==1.1.0
+      - prettytable
+      - transforms3d==0.3.1
+      - -e ./manopth/.
+      - -e .
