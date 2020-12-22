@@ -20,9 +20,9 @@ $ conda env create -f environment.yaml
 $ conda activate cpf
 ```
 
-## 3. Download [assets]() files and put it in `assets` folder.
+## 3. Download [assets](https://drive.google.com/file/d/12WpycXEgnXYvTDalLUClw5exy4IG_LsW/view?usp=sharing) files and put it in `assets` folder.
 
-Download the MANO model files from [here](https://mano.is.tue.mpg.de/), and put it into `assets/mano`.
+Download the MANO model files from [official MANO website](https://mano.is.tue.mpg.de/), and put it into `assets/mano`.
 We currently only use the `MANO_RIGHT.pkl`
 
 Now your `assets` folder should look like this:
@@ -70,8 +70,8 @@ If every thing is correct, your `data/fhbhands` should look like this:
 
 ```
 Optionally, resize the images (speeds up training !) based on the [handobjectconsist/reduce_fphab.py](https://github.com/hassony2/handobjectconsist/blob/master/reduce_fphab.py).
-```python
-python reduce_fphab.py
+```shell
+$ python reduce_fphab.py
 ```
 Download our [fhbhands_supp](https://drive.google.com/file/d/1hY_gyrZD_RU3nxI90oJZ6tNkwxKYhUGs/view?usp=sharing) and place it at `data/fhbhands_supp`:
 ```
@@ -126,8 +126,8 @@ CPF_checkpoints/
 
 We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only conntains 10 samples to demonstrate our pipline.
 Notice: this demo requires active screen for visualizing.
-```python
-python training/run_demo.py \
+```shell
+$ python training/run_demo.py \
     --gpu 0 \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar \
     --honet_mano_fhb_hand
