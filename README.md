@@ -1,6 +1,6 @@
 # Contact Potential Field
 
-This repo contains mode, demo, and test codes of our paper:
+This repo contains model, demo, and test codes of our paper:
 [CPF: Learning a **C**ontact **P**otential **F**ield to Model the Hand-object Interaction](https://arxiv.org/abs/2012.00924)
 
 <div align="center">
@@ -53,7 +53,7 @@ Now your `assets` folder should look like this:
 ### First-Person Hand Action Benchmark (fhb)
 
 Download and unzip the First-Person Hand Action Benchmark dataset following the [official instructions](https://github.com/guiggh/hand_pose_action) to the `data/fhbhands` folder
-If every thing is correct, your `data/fhbhands` should look like this:
+If everything is correct, your `data/fhbhands` should look like this:
 ```
 .
 ├── action_object_info.txt
@@ -83,7 +83,7 @@ Download our [fhbhands_supp](https://drive.google.com/file/d/1hY_gyrZD_RU3nxI90o
 
 ### HO3D
 Download and unzip the [HO3D](https://www.tugraz.at/index.php?id=40231) dataset following the [official instructions](https://github.com/shreyashampali/ho3d?) to the `data/HO3D` foloder.
-if every thing is correct, the HO3D & YCB folder in your `data` shouled look like this:
+if everything is correct, the HO3D & YCB folder in your `data` shouled look like this:
 ```
 data/
 ├── HO3D/
@@ -98,7 +98,7 @@ data/
 
 Download our [YCB_models_supp](https://drive.google.com/file/d/1daSKseF-PrVLwd4wIcF2PLtAjYBF2XH1/view?usp=sharing) and place it at `data/YCB_models_supp`
 
-Now the `data` folder should have root structure like:
+Now the `data` folder should have a root structure like:
 ```
 data/
 ├── fhbhands/
@@ -124,7 +124,7 @@ CPF_checkpoints/
 
 ## 6. Launch visualization
 
-We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only conntains 10 samples to demonstrate our pipline.
+We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only contains 10 samples to demonstrate our pipeline.
 Notice: this demo requires active screen for visualizing.
 ```shell
 $ python training/run_demo.py \
