@@ -133,7 +133,7 @@ CPF_checkpoints/
 ## 6. Launch visualization
 
 We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only contains 10 samples to demonstrate our pipeline.
-Notice: this demo requires active screen for visualizing.
+Notice: this demo requires active screen for visualizing. Press `q` in the "runtime hand" window to start fitting.
 ```shell
 $ python training/run_demo.py \
     --gpu 0 \

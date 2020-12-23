@@ -44,26 +44,17 @@ def create_hand_vertex_color(hand_verts, anchor_path):
 
     return vertex_color
 
+
 def caculate_align_mat(vec):
     vec = vec / np.linalg.norm(vec)
     z_unit_Arr = np.array([0, 0, 1])
 
     z_mat = np.array(
-        [
-            [0, -z_unit_Arr[2], z_unit_Arr[1]],
-            [z_unit_Arr[2], 0, -z_unit_Arr[0]],
-            [-z_unit_Arr[1], z_unit_Arr[0], 0],
-        ]
+        [[0, -z_unit_Arr[2], z_unit_Arr[1]], [z_unit_Arr[2], 0, -z_unit_Arr[0]], [-z_unit_Arr[1], z_unit_Arr[0], 0],]
     )
 
     z_c_vec = np.matmul(z_mat, vec)
-    z_c_vec_mat = np.array(
-        [
-            [0, -z_c_vec[2], z_c_vec[1]],
-            [z_c_vec[2], 0, -z_c_vec[0]],
-            [-z_c_vec[1], z_c_vec[0], 0],
-        ]
-    )
+    z_c_vec_mat = np.array([[0, -z_c_vec[2], z_c_vec[1]], [z_c_vec[2], 0, -z_c_vec[0]], [-z_c_vec[1], z_c_vec[0], 0],])
 
     if np.dot(z_unit_Arr, vec) == -1:
         qTrans_Mat = -np.eye(3, 3)
@@ -99,15 +90,11 @@ def main(args):
     batch_size = args.batch_size
 
     mano_layer = ManoLayer(
-        mano_root="assets/mano",
-        use_pca=False,
-        flat_hand_mean=True,
-        center_idx=9,
-        return_transf=True,
+        mano_root="assets/mano", use_pca=False, flat_hand_mean=True, center_idx=9, return_transf=True,
     )
     axis_layer = AxisLayer()
     faces = np.array(mano_layer.th_faces).astype(np.long)
-    face_vertex_index, anchor_weight, merged_vertex_assignment, anchor_mapping = anchor_load_driver("data/info")
+    face_vertex_index, anchor_weight, merged_vertex_assignment, anchor_mapping = anchor_load_driver("assets")
 
     random_shape = torch.ones(batch_size, 10) * 0.1
 
@@ -120,8 +107,7 @@ def main(args):
 
     if args.render == "plt":
         demo.display_hand(
-            {"verts": vertices, "joints": joints},
-            mano_faces=mano_layer.th_faces,
+            {"verts": vertices, "joints": joints}, mano_faces=mano_layer.th_faces,
         )
     elif args.render == "pyrender":
         # =========================== Viewer Options >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -188,7 +174,7 @@ def main(args):
         vertices = np.array(vertices[0])
         hand_mesh.triangles = o3d.utility.Vector3iVector(faces)
         hand_mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        hand_mesh.vertex_colors = o3d.utility.Vector3dVector(create_hand_vertex_color(vertices, "data/info/anchor"))
+        hand_mesh.vertex_colors = o3d.utility.Vector3dVector(create_hand_vertex_color(vertices, "assets/anchor"))
 
         hand_mesh.compute_vertex_normals()
         vis_gt = o3d.visualization.Visualizer()

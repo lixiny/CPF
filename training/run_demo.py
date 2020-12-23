@@ -677,8 +677,8 @@ if __name__ == "__main__":
     parser.add_argument("--vertex_contact_thresh", type=float, default=0.7)
 
     # GEO
-    parser.add_argument("--palm_path", type=str, default="data/info/hand_palm_full.txt")
-    parser.add_argument("--hand_closed_path", type=str, default="data/info/closed_hand/hand_mesh_close.obj")
+    parser.add_argument("--palm_path", type=str, default="assets/hand_palm_full.txt")
+    parser.add_argument("--hand_closed_path", type=str, default="assets/closed_hand/hand_mesh_close.obj")
     parser.add_argument("--lambda_contact_loss", type=float, default=10.0)
     parser.add_argument("--lambda_repulsion_loss", type=float, default=1.6)
     parser.add_argument("--repulsion_query", type=float, default=0.020)
