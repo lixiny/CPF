@@ -7,6 +7,8 @@ This repo contains model, demo, and test codes of our paper:
     <img src="teaser.png", style="zoom:60%;">
 </div>
 
+
+
 # Guide to the Demo
 ## 1. Get our code:
 ```shell script
@@ -139,6 +141,10 @@ $ python training/run_demo.py \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar \
     --honet_mano_fhb_hand
 ```
+
+<div align="center">
+    <img src="teaser_fitting.gif", style="zoom:60%;">
+</div>
 
 ## 7. Test on full dataset
 
