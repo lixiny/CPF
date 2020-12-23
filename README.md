@@ -20,7 +20,7 @@ $ conda env create -f environment.yaml
 $ conda activate cpf
 ```
 
-## 3. Download [assets](https://drive.google.com/file/d/12WpycXEgnXYvTDalLUClw5exy4IG_LsW/view?usp=sharing) files and put it in `assets` folder.
+## 3. Download [assets](https://drive.google.com/file/d/1IP7dJimk0G-rixfDprgYE0F8kquB6PWf/view?usp=sharing) files and put it in `assets` folder.
 
 Download the MANO model files from [official MANO website](https://mano.is.tue.mpg.de/), and put it into `assets/mano`.
 We currently only use the `MANO_RIGHT.pkl`
@@ -40,8 +40,6 @@ Now your `assets` folder should look like this:
 │   │   ├── ...
 │   ├── Subject_2/
 |   ├── ...
-├── hand_palm_0.50.txt
-├── hand_palm_0.75.txt
 ├── hand_palm_full.txt
 └── mano/
     ├── fhb_skel_centeridx9.pkl
@@ -111,6 +109,7 @@ Now the `data` folder should have a root structure like:
 data/
 ├── fhbhands/
 ├── fhbhands_supp/
+├── fhbhands_example/
 ├── HO3D/
 ├── YCB_models/
 ├── YCB_models_supp/
