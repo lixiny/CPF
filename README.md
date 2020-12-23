@@ -67,7 +67,6 @@ If everything is correct, your `data/fhbhands` should look like this:
 ├── Subjects_info/
 ├── Video_files/
 ├── Video_files_480/ # Optionally
-
 ```
 Optionally, resize the images (speeds up training !) based on the [handobjectconsist/reduce_fphab.py](https://github.com/hassony2/handobjectconsist/blob/master/reduce_fphab.py).
 ```shell
@@ -75,8 +74,8 @@ $ python reduce_fphab.py
 ```
 Download our [fhbhands_supp](https://drive.google.com/file/d/1hY_gyrZD_RU3nxI90oJZ6tNkwxKYhUGs/view?usp=sharing) and place it at `data/fhbhands_supp`:
 
-Download our [fhbhands_example](https://drive.google.com/file/d/14wxN23RmVCSphHIV00qk-ht00yfdu_Hu/view?usp=sharing) and place it at `data/fhbhands_example`
-this `fhbhands_example` contains 10 samples that are designed to demonstrate our pipeline.
+Download our [fhbhands_example](https://drive.google.com/file/d/14wxN23RmVCSphHIV00qk-ht00yfdu_Hu/view?usp=sharing) and place it at `data/fhbhands_example`.
+This `fhbhands_example` contains 10 samples that are designed to demonstrate our pipeline.
 
 ```
 ├── fhbhands/
@@ -88,7 +87,6 @@ this `fhbhands_example` contains 10 samples that are designed to demonstrate our
 │   ├── images/
 │   ├── object_models/
 │   └── sample_list.txt
-
 ```
 
 ### HO3D
