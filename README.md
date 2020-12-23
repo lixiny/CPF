@@ -3,10 +3,9 @@
 This repo contains model, demo, and test codes of our paper:
 [CPF: Learning a **C**ontact **P**otential **F**ield to Model the Hand-object Interaction](https://arxiv.org/abs/2012.00924)
 
-<div align="center">
-    <img src="teaser.png", style="zoom:60%;">
-</div>
-
+<p align="center">
+    <img src="teaser.png", width="100%">
+</p>
 
 
 # Guide to the Demo
@@ -142,9 +141,9 @@ $ python training/run_demo.py \
     --honet_mano_fhb_hand
 ```
 
-<div align="center">
-    <img src="teaser_fitting.gif", style="zoom:60%;">
-</div>
+<p align="center">
+    <img src="teaser_fitting.gif", width="60%">
+</p>
 
 ## 7. Test on full dataset
 
@@ -259,22 +258,21 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --mode hand_obj
 ```
 
+## Results
+We provide the test results at here
+// TODO 
+
+
 ## Citation
 If you find this work helpful, please consider citing us:
 ```
-@misc{yang2020cpf,
+@article{yang2020cpf,
   title={CPF: Learning a Contact Potential Field to Model the Hand-object Interaction},
   author={Yang, Lixin and Zhan, Xinyu and Li, Kailin and Xu, Wenqiang and Li, Jiefeng and Lu, Cewu},
   journal={arXiv preprint arXiv:2012.00924},
   year={2020}
 }
 ```
-
-## Acknowledgement
-todo
-
-
-
 
 
 
