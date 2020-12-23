@@ -74,16 +74,26 @@ Optionally, resize the images (speeds up training !) based on the [handobjectcon
 $ python reduce_fphab.py
 ```
 Download our [fhbhands_supp](https://drive.google.com/file/d/1hY_gyrZD_RU3nxI90oJZ6tNkwxKYhUGs/view?usp=sharing) and place it at `data/fhbhands_supp`:
+
+Download our [fhbhands_example](https://drive.google.com/file/d/14wxN23RmVCSphHIV00qk-ht00yfdu_Hu/view?usp=sharing) and place it at `data/fhbhands_example`
+this `fhbhands_example` contains 10 samples that are designed to demonstrate our pipeline.
+
 ```
 ├── fhbhands/
 ├── fhbhands_supp/
 │   ├── Object_models/
 │   └── Object_models_binvox/
+├── fhbhands_example/
+│   ├── annotations/
+│   ├── images/
+│   ├── object_models/
+│   └── sample_list.txt
+
 ```
 
 ### HO3D
-Download and unzip the [HO3D](https://www.tugraz.at/index.php?id=40231) dataset following the [official instructions](https://github.com/shreyashampali/ho3d?) to the `data/HO3D` foloder.
-if everything is correct, the HO3D & YCB folder in your `data` shouled look like this:
+Download and unzip the [HO3D](https://www.tugraz.at/index.php?id=40231) dataset following the [official instructions](https://github.com/shreyashampali/ho3d?) to the `data/HO3D` folder.
+if everything is correct, the HO3D & YCB folder in your `data` should look like this:
 ```
 data/
 ├── HO3D/
@@ -109,7 +119,7 @@ data/
 ```
 
 ## 5. Download pre-trained checkpoints
-download the pre-trained [CPF_checkpoints](https://drive.google.com/file/d/1JWu5TSTTIWvNrTZmmjhTEm4xGqv_cMhd/view?usp=sharing), unzip it at the `CPF_checkpoints` folder:
+download our pre-trained [CPF_checkpoints](https://drive.google.com/file/d/1JWu5TSTTIWvNrTZmmjhTEm4xGqv_cMhd/view?usp=sharing), unzip it at the `CPF_checkpoints` folder:
 ```
 CPF_checkpoints/
 ├── honet/
