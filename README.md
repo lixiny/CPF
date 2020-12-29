@@ -145,12 +145,12 @@ $ python training/run_demo.py \
     <img src="teaser_fitting.gif", width="60%">
 </p>
 
-## 7. Test on full dataset
+## 7. Test on full dataset (FHB, HO3D v1/v2)
 
-We provide python srcipts to test on the full dataset to approximately reproduce our results:
+We provide shell srcipts to test on the full dataset to approximately reproduce our results.
 
 ### FHB
-dump:
+dump the results of HoNet and PiCR:
 ```shell
 $ python training/dumppicr_dist.py \
     --gpu 0,1 \
@@ -170,15 +170,15 @@ $ python training/dumppicr_dist.py \
     --dump_prefix common/picr \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar
 ```
-and reload optimizer:
+and reload the GeO optimizer:
 ```shell
-# hand only
+# setting 1: hand-only
 $ CUDA_VISIBLE_DEVICES=0,1,2,3 python training/optimize.py \
     --n_workers 16 \
     --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
     --mode hand
 
-# hand obj
+# setting 2: hand-obj
 $ CUDA_VISIBLE_DEVICES=0,1,2,3 python training/optimize.py \
     --n_workers 16 \
     --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
@@ -208,7 +208,7 @@ $ python training/dumppicr_dist.py  \
 ```
 and reload optimizer:
 ```shell
-# hand only
+# hand-only
 $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --n_workers 24 \
     --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
@@ -221,7 +221,7 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --repulsion_threshold 0.080 \
     --mode hand
 
-# hand obj
+# hand-obj
 $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --n_workers 24 \
     --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
@@ -270,10 +270,18 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --repulsion_query 0.030 \
     --repulsion_threshold 0.080 \
     --mode hand_obj
-```
+```  
+
+
 
 ## Results
-We provide the test results at [here](https://github.com/lixiny/CPF/blob/main/fitting_res.txt).
+
+Testing on the full dataset may take a while ( 0.5 ~ 1.5 day ), thus we also provide our test results at [fitting_res.txt](https://github.com/lixiny/CPF/blob/main/fitting_res.txt). 
+
+## K-MANO
+
+We provide pytorch implementation of our Kinematic-chained MANO in [lixiny/manopth](https://github.com/lixiny/manopth/tree/3792dd879d02d7d588bcc5c655c8a5a02c13dceb), which is modified from the original [hassony2/manopth](https://github.com/hassony2/manopth). Thank [Yana Hasson](https://hassony2.github.io/) for providing the code.
+
 
 
 ## Citation
@@ -286,6 +294,8 @@ If you find this work helpful, please consider citing us:
   year={2020}
 }
 ```
+And if you have any question or suggestion, do not hesitate to contact me through siriusyang[at]sjtu[dot]edu[dot]cn.
+
 
 
 
