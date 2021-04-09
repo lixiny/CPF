@@ -1,7 +1,9 @@
 name: cpf
 
 channels:
-  - pytorch
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
   - defaults
 
 dependencies:
@@ -16,6 +18,7 @@ dependencies:
   - tqdm
   - cython=0.29.21
   - pip:
+      - -i https://pypi.tuna.tsinghua.edu.cn/simple
       - git+https://github.com/utiasSTARS/liegroups.git
       - trimesh==3.8.10
       - open3d==0.10.0.0
