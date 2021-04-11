@@ -17,9 +17,11 @@ dependencies:
   - setuptools~=46.2.0
   - tqdm
   - cython=0.29.21
+  - git
   - pip:
+      - git+https://gitee.com/lixin-yang/liegroups.git
+
       - -i https://pypi.tuna.tsinghua.edu.cn/simple
-      - git+https://github.com/utiasSTARS/liegroups.git
       - trimesh==3.8.10
       - open3d==0.10.0.0
       - pyrender==0.1.43
