@@ -440,7 +440,7 @@ class HOdata(ABC):
             scale_jittering = self.scale_jittering * scale_jit
             scale_jittering = np.clip(scale_jittering, 1 - self.scale_jittering, 1 + self.scale_jittering)
             scale = scale * scale_jittering
-            rot = Uniform(low=-self.max_rot, high=self.max_rot).sample().item()
+            rot = Uniform(low=-self.max_rot, high=self.max_rot).sample().item() if self.max_rot != 0 else 0.0
         else:
             rot = 0
         if self.block_rot:
