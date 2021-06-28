@@ -5,7 +5,7 @@ from hocontact.postprocess.geo_loss import HandLoss
 from manopth.rodrigues_layer import batch_rodrigues
 
 
-class KMetric:
+class AnatomyMetric:
     def __init__(self):
         self.axislayer = AxisLayer()
 
@@ -80,8 +80,8 @@ class KMetric:
         b_axis, u_axis, l_axis = self.axislayer(batch_hand_joints, hand_rotmatrix)  # [B, 15, 3] each
         axis = batch_full_pose_aa.view(batch_size, -1, 3)[:, 1:, :]  # ignore global rot
         angle = torch.norm(axis, dim=-1, keepdim=False)
-        angle_loss = KMetric.rotation_angle_loss(angle)
-        joint_b_loss = KMetric.joint_b_axis_loss(b_axis, axis)
-        joint_u_loss = KMetric.joint_u_axis_loss(u_axis, axis)
-        joint_l_loss = KMetric.joint_l_limit_loss(l_axis, axis)
+        angle_loss = AnatomyMetric.rotation_angle_loss(angle)
+        joint_b_loss = AnatomyMetric.joint_b_axis_loss(b_axis, axis)
+        joint_u_loss = AnatomyMetric.joint_u_axis_loss(u_axis, axis)
+        joint_l_loss = AnatomyMetric.joint_l_limit_loss(l_axis, axis)
         return angle_loss + 0.1 * joint_b_loss + 0.1 * joint_u_loss + 0.1 * joint_l_loss
