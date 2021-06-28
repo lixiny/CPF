@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from manopth.axislayer import AxisLayer
-from hocontact.postprocess.hand_optimizer import HandLoss
+from hocontact.postprocess.geo_loss import HandLoss
 from manopth.rodrigues_layer import batch_rodrigues
 
 

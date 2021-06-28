@@ -2,7 +2,6 @@ import numpy as np
 import hocontact.hodatasets.hodata as hodata
 from hocontact.hodatasets import fhbutils
 from hocontact.hodatasets.hodata import HOdata
-import cv2
 
 
 def create_vertex_color(contact_info, mode="vertex_contact"):
@@ -130,6 +129,7 @@ def debug_vertex_color(contact_info, mode="vertex_contact"):
 
 
 def view_vertex_contact(hodata):
+    import cv2
     import pygame
     import open3d as o3d
 

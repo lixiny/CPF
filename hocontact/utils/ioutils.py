@@ -243,56 +243,6 @@ def save_checkpoint(
             shutil.copyfile(filepath, os.path.join(checkpoint, "model_best.pth.tar"))
 
 
-##############################################
-# def save_checkpoint(
-#         state,
-#         checkpoint='checkpoint',
-#         filename='checkpoint.pth.tar',
-#         snapshot=None,
-#         is_best=False
-# ):
-#     # preds = to_numpy(preds)
-#     filepath = os.path.join(checkpoint, filename)
-#     fileprefix = filename.split('.')[0]
-#     torch.save(state, filepath)
-
-#     if snapshot and state['epoch'] % snapshot == 0:
-#         shutil.copyfile(
-#             filepath,
-#             os.path.join(
-#                 checkpoint,
-#                 '{}_{}.pth.tar'.format(fileprefix, state['epoch'])
-#             )
-#         )
-
-#     if is_best:
-#         shutil.copyfile(
-#             filepath,
-#             os.path.join(
-#                 checkpoint,
-#                 '{}_best.pth.tar'.format(fileprefix)
-#             )
-#         )
-
-
-# def load_checkpoint(model, checkpoint_pth):
-#     checkpoint = torch.load(checkpoint_pth)
-#     epoch = checkpoint['epoch']
-#     pretrain_dict = clean_state_dict(checkpoint['state_dict'])
-
-#     model_state = model.state_dict()
-#     state = {}
-#     for k, v in pretrain_dict.items():
-#         if k in model_state:
-#             state[k] = v
-#         else:
-#             logger.info(f'{k} is NOT in current model')
-#     model_state.update(state)
-#     model.load_state_dict(model_state)
-
-#     logger.info(f'loaded #epoch{epoch} from {checkpoint_pth}', 'cyan')
-
-
 def clean_state_dict(state_dict):
     """save a cleaned version of model without dict and DataParallel
 

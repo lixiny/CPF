@@ -434,11 +434,11 @@ class HO3D(hodata.HOdata):
         obj_transf = np.concatenate([obj_transf, np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0)
         return obj_transf
 
-    # for compatibility
+    # ? for compatibility
     def get_obj_transf(self, idx):
         return self.get_obj_transf_wrt_cam(idx)
 
-    # for compatibility
+    # ? for compatibility
     def get_obj_pose(self, idx):
         return self.get_obj_transf_wrt_cam(idx)
 
@@ -519,10 +519,6 @@ class HO3D(hodata.HOdata):
         else:
             logger.error("Non full_image mode is not implements")
             raise NotImplementedError()
-            # img_name = self.image_names[idx]
-            # bbox = self.box_infos[img_name]["bbox"]
-            # center = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[2]) / 2])
-            # scale = max(bbox[2] - bbox[0], bbox[3] - bbox[1])
         return center, scale
 
     def get_annot(self, idx):
@@ -555,12 +551,6 @@ class HO3D(hodata.HOdata):
         return handpose_transformed.astype(np.float32)
 
     # ? only used in offline eval
-    # def get_hand_tsl_wrt_cam(self, idx):
-    #     seq, img_idx = self.idxs[idx]
-    #     annot = self.seq_map[seq][img_idx]
-    #     handtsl = self.cam_extr[:3, :3].dot(annot["handTrans"])
-    #     return handtsl.astype(np.float32)
-
     def get_hand_tsl_wrt_cam(self, idx):
         hand_pose = torch.from_numpy(self.get_hand_pose_wrt_cam(idx)).unsqueeze(0)
         hand_shape = torch.from_numpy(self.get_hand_shape(idx)).unsqueeze(0)
@@ -594,9 +584,11 @@ class HO3D(hodata.HOdata):
         handshape = annot["handBeta"]
         return handshape.astype(np.float32)
 
+    # ? for compatibility
     def get_hand_pose(self, idx):
         return self.get_hand_pose_wrt_cam(idx)
 
+    # ? for compatibility
     def get_hand_tsl(self, idx):
         return self.get_hand_tsl_wrt_cam(idx)
 
@@ -624,7 +616,7 @@ class HO3D(hodata.HOdata):
         verts = self.cam_extr[:3, :3].dot(verts.transpose()).transpose()
 
         # NOTE: verts_can = verts - bbox_center
-        verts_can, bbox_center, bbox_scale = meshutils.center_vert_bbox(verts, scale=False)  # !! CENTERED HERE
+        verts_can, bbox_center, bbox_scale = meshutils.center_vert_bbox(verts, scale=False)  # CENTERED HERE
         return verts_can, bbox_center, bbox_scale
 
     # ? only used in offline eval
@@ -720,10 +712,6 @@ def view_data(ho_dataset):
             v = obj_corners2d[j]
             cv2.circle(img, (v[0], v[1]), radius=8, thickness=-1, color=(0, 0, 255))
         cv2.imshow("ho3d", img)
-        # cprint(
-        #     f"{ho_dataset.get_image_path(i).split('/')[3]} -> {ho_dataset.get_image_path(i).split('/')[5]}",
-        #     "green",
-        # )
         cv2.waitKey(1)
 
 

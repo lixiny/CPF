@@ -135,7 +135,7 @@ CPF_checkpoints/
 We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only contains 10 samples to demonstrate our pipeline.
 Notice: this demo requires active screen for visualizing. Press `q` in the "runtime hand" window to start fitting.
 ```shell
-$ python training/run_demo.py \
+$ python scripts/run_demo.py \
     --gpu 0 \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar \
     --honet_mano_fhb_hand
@@ -152,7 +152,7 @@ We provide shell srcipts to test on the full dataset to approximately reproduce 
 ### FHB
 dump the results of HoNet and PiCR:
 ```shell
-$ python training/dumppicr_dist.py \
+$ python scripts/dump_picr_res.py \
     --gpu 0,1 \
     --dist_master_addr localhost \
     --dist_master_port 12355 \
@@ -173,13 +173,13 @@ $ python training/dumppicr_dist.py \
 and reload the GeO optimizer:
 ```shell
 # setting 1: hand-only
-$ CUDA_VISIBLE_DEVICES=0,1,2,3 python training/optimize.py \
+$ CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/eval_geo.py \
     --n_workers 16 \
     --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
     --mode hand
 
 # setting 2: hand-obj
-$ CUDA_VISIBLE_DEVICES=0,1,2,3 python training/optimize.py \
+$ CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/eval_geo.py \
     --n_workers 16 \
     --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
     --mode hand_obj \
@@ -188,7 +188,7 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3 python training/optimize.py \
 ### HO3Dv1
 dump:
 ```shell
-$ python training/dumppicr_dist.py  \
+$ python scripts/dump_picr_res.py  \
     --gpu 0,1 \
     --dist_master_addr localhost \
     --dist_master_port 12356 \
@@ -209,7 +209,7 @@ $ python training/dumppicr_dist.py  \
 and reload optimizer:
 ```shell
 # hand-only
-$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
+$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python scripts/eval_geo.py \
     --n_workers 24 \
     --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
     --lr 1e-2 \
@@ -222,7 +222,7 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
     --mode hand
 
 # hand-obj
-$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
+$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python scripts/eval_geo.py \
     --n_workers 24 \
     --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
     --lr 1e-2 \
@@ -238,7 +238,7 @@ $ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
 ### HO3Dofficial
 dump:
 ```shell
-$ python training/dumppicr_dist.py  \
+$ python scripts/dump_picr_res.py  \
     --gpu 0,1 \
     --dist_master_addr localhost \
     --dist_master_port 12356 \
@@ -259,7 +259,7 @@ $ python training/dumppicr_dist.py  \
 ```
 and reload optimizer:
 ```shell
-$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python training/optimize.py \
+$ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python scripts/eval_geo.py \
     --n_workers 24 \
     --data_path common/picr_ho3dofficial/HO3D/test_official_mf1_likev1_fct\(x\)_ec/  \
     --lr 1e-2 \

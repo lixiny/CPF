@@ -1,4 +1,3 @@
-from math import pi
 from pprint import pprint
 
 import numpy as np
@@ -7,252 +6,18 @@ import torch
 from manopth.anchorlayer import AnchorLayer
 from manopth.axislayer import AxisLayer
 from manopth.manolayer import ManoLayer
-from manopth.quatutils import (
-    quaternion_norm_squared,
-    normalize_quaternion,
-    quaternion_inv,
-    quaternion_mul,
-    quaternion_to_angle_axis,
-)
+from manopth.quatutils import normalize_quaternion, quaternion_to_angle_axis
 from manopth.rodrigues_layer import batch_rodrigues
 from termcolor import colored
 from tqdm import trange
 
 from hocontact.models.honet import ManoAdaptor
+from hocontact.postprocess.geo_loss import FieldLoss, ObjectLoss, HandLoss
 from hocontact.utils import netutils
-from hocontact.utils.collisionutils import (
-    pairwise_dist,
-)
 from hocontact.visualize.vis_contact_info import create_vertex_color
 
 
-def caculate_align_mat(vec):
-    vec = vec / np.linalg.norm(vec)
-    z_unit_Arr = np.array([0, 0, 1])
-
-    z_mat = np.array(
-        [[0, -z_unit_Arr[2], z_unit_Arr[1]], [z_unit_Arr[2], 0, -z_unit_Arr[0]], [-z_unit_Arr[1], z_unit_Arr[0], 0],]
-    )
-
-    z_c_vec = np.matmul(z_mat, vec)
-    z_c_vec_mat = np.array([[0, -z_c_vec[2], z_c_vec[1]], [z_c_vec[2], 0, -z_c_vec[0]], [-z_c_vec[1], z_c_vec[0], 0],])
-
-    if np.dot(z_unit_Arr, vec) == -1:
-        qTrans_Mat = -np.eye(3, 3)
-    elif np.dot(z_unit_Arr, vec) == 1:
-        qTrans_Mat = np.eye(3, 3)
-    else:
-        qTrans_Mat = np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(z_unit_Arr, vec))
-
-    return qTrans_Mat
-
-
-class HandLoss:
-    @staticmethod
-    def get_edge_idx(face_idx_tensor: torch.Tensor) -> list:
-        device = face_idx_tensor.device
-        res = []
-        face_idx_tensor = face_idx_tensor.long()
-        face_idx_list = face_idx_tensor.tolist()
-        for item in face_idx_list:
-            v_idx_0, v_idx_1, v_idx_2 = item
-            if {v_idx_0, v_idx_1} not in res:
-                res.append({v_idx_0, v_idx_1})
-            if {v_idx_1, v_idx_2} not in res:
-                res.append({v_idx_1, v_idx_2})
-            if {v_idx_0, v_idx_2} not in res:
-                res.append({v_idx_0, v_idx_2})
-        res = [list(e) for e in res]
-        res = torch.tensor(res).long().to(device)
-        return res
-
-    @staticmethod
-    def get_edge_len(verts: torch.Tensor, edge_idx: torch.Tensor):
-        # verts: TENSOR[NVERT, 3]
-        # edge_idx: TENSOR[NEDGE, 2]
-        return torch.norm(verts[edge_idx[:, 0], :] - verts[edge_idx[:, 1], :], p=2, dim=1)
-
-    @staticmethod
-    def pose_quat_norm_loss(var_pose):
-        """ this is the only loss accepts unnormalized quats """
-        reshaped_var_pose = var_pose.reshape((16, 4))  # TENSOR[16, 4]
-        quat_norm_sq = quaternion_norm_squared(reshaped_var_pose)  # TENSOR[16, ]
-        squared_norm_diff = quat_norm_sq - 1.0  # TENSOR[16, ]
-        res = torch.mean(torch.pow(squared_norm_diff, 2), dim=0)
-        return res
-
-    @staticmethod
-    def pose_reg_loss(var_pose_normed, var_pose_init):
-        # the format of quat is [w, x, y, z]
-        # to regularize
-        # just to make sure w is close to 1.0
-        # working aside with self.pose_quat_norm_loss defined above
-        inv_var_pose_init = quaternion_inv(var_pose_init)
-        combined_pose = quaternion_mul(var_pose_normed, inv_var_pose_init)
-        w = combined_pose[..., 0]  # get w
-        diff = w - 1.0  # TENSOR[16, ]
-        res = torch.mean(torch.pow(diff, 2), dim=0)
-        return res
-
-    @staticmethod
-    def shape_reg_loss(var_shape, shape_init):
-        return torch.sum(torch.pow(var_shape - shape_init, 2), dim=0)
-
-    @staticmethod
-    def edge_len_loss(rebuild_verts, hand_edges, static_edge_len):
-        pred_edge_len = HandLoss.get_edge_len(rebuild_verts, hand_edges)
-        diff = pred_edge_len - static_edge_len  # TENSOR[NEDGE, ]
-        return torch.mean(torch.pow(diff, 2), dim=0)
-
-    # **** axis order right hand
-
-    #         14-13-12-\
-    #                   \
-    #    2-- 1 -- 0 -----*
-    #   5 -- 4 -- 3 ----/
-    #   11 - 10 - 9 ---/
-    #    8-- 7 -- 6 --/
-
-    @staticmethod
-    def joint_b_axis_loss(b_axis, axis):
-        b_soft_idx = [0, 3, 9, 6, 14]
-        b_thumb_soft_idx = [12, 13]
-        b_axis = b_axis.squeeze(0)  # [15, 3]
-
-        b_axis_cos = torch.einsum("bi,bi->b", b_axis, axis)
-        restrict_cos = b_axis_cos[[i for i in range(15) if i not in b_soft_idx and i not in b_thumb_soft_idx]]
-        soft_loss = torch.relu(torch.abs(b_axis_cos[b_soft_idx]) - np.cos(pi / 2 - pi / 36))  # [-5, 5]
-        thumb_soft_loss = torch.relu(torch.abs(b_axis_cos[b_thumb_soft_idx]) - np.cos(pi / 2 - pi / 3))  # [-60, 60]
-
-        res = (
-            torch.mean(torch.pow(restrict_cos, 2), dim=0)
-            + torch.mean(torch.pow(soft_loss, 2), dim=0)
-            + 0.01 * torch.mean(torch.pow(thumb_soft_loss, 2), dim=0)
-        )
-        return res
-
-    @staticmethod
-    def joint_u_axis_loss(u_axis, axis):
-        u_soft_idx = [0, 3, 9, 6, 14]
-        u_thumb_soft_idx = [12, 13]
-        u_axis = u_axis.squeeze(0)  # [15, 3]
-
-        u_axis_cos = torch.einsum("bi,bi->b", u_axis, axis)
-        restrict_cos = u_axis_cos[[i for i in range(15) if i not in u_soft_idx and i not in u_thumb_soft_idx]]
-        soft_loss = torch.relu(torch.abs(u_axis_cos[u_soft_idx]) - np.cos(pi / 2 - pi / 18))  # [-10, 10]
-        thumb_soft_loss = torch.relu(torch.abs(u_axis_cos[u_thumb_soft_idx]) - np.cos(pi / 2 - pi / 3))  # [-60, 60]
-
-        res = (
-            torch.mean(torch.pow(restrict_cos, 2), dim=0)
-            + torch.mean(torch.pow(soft_loss, 2), dim=0)
-            + 0.01 * torch.mean(torch.pow(thumb_soft_loss, 2), dim=0)
-        )
-        return res
-
-    @staticmethod
-    def joint_l_limit_loss(l_axis, axis):
-        l_soft_idx = [0, 3, 9, 6, 14]
-        l_thumb_soft_idx = [12, 13]
-        l_axis = l_axis.squeeze(0)  # [15, 3]
-        l_axis_cos = torch.einsum("bi,bi->b", l_axis, axis)
-        restrict_cos = l_axis_cos[[i for i in range(15) if i not in l_soft_idx and i not in l_thumb_soft_idx]]
-        soft_loss = torch.relu(-l_axis_cos[l_soft_idx] + 1 - np.cos(pi / 2 - pi / 9))  # [-20, 20]
-        thumb_soft_loss = torch.relu(-l_axis_cos[l_thumb_soft_idx] + 1 - np.cos(pi / 2 - pi / 3))
-
-        res = (
-            torch.mean(torch.pow(restrict_cos - 1, 2), dim=0)
-            + torch.mean(torch.pow(soft_loss, 2), dim=0)
-            + 0.01 * torch.mean(torch.pow(thumb_soft_loss, 2), dim=0)
-        )
-        return res
-
-    @staticmethod
-    def rotation_angle_loss(angle, limit_angle=pi / 2, eps=1e-10):
-        angle_new = torch.zeros_like(angle)  # TENSOR[15, ]
-        nonzero_mask = torch.abs(angle) > eps  # TENSOR[15, ], bool
-        angle_new[nonzero_mask] = angle[nonzero_mask]  # if angle is too small, pick them out of backward graph
-        angle_over_limit = torch.relu(angle_new - limit_angle)  # < pi/2, 0; > pi/2, linear | Tensor[16, ]
-        angle_over_limit_squared = torch.pow(angle_over_limit, 2)  # TENSOR[15, ]
-        res = torch.mean(angle_over_limit_squared, dim=0)
-        return res
-
-    @staticmethod
-    def hand_tsl_loss(var_hand_tsl, init_hand_tsl):
-        return torch.sum(torch.pow(var_hand_tsl - init_hand_tsl, 2))
-
-
-class ObjectLoss:
-    @staticmethod
-    def obj_transf_loss(vars_obj_tsl, vars_obj_rot, init_obj_tsl, init_obj_rot):
-        tsl_loss = torch.pow((vars_obj_tsl - init_obj_tsl), 2)
-        rot_loss = torch.pow((vars_obj_rot - init_obj_rot), 2)
-        return torch.sum(tsl_loss, dim=0) + torch.sum(rot_loss, dim=0)
-
-
-class WorldLoss:
-    @staticmethod
-    def contact_loss(apos, vpos, e, e_k):
-        # apos, vpos = TENSOR[NVALID, 3]
-        # e = TENSOR[NVALID, ]
-        dist = torch.sum(torch.pow(vpos - apos, 2), dim=1)  # TENSOR[NVALID, ]
-        res = torch.mean(e_k * e * dist, dim=0)
-        return res
-
-    @staticmethod
-    def repulsion_loss(
-        pred_hand_verts, concat_hand_vert_idx, concat_obj_vert_3d, concat_obj_normal, constant=0.05, threshold=0.015,
-    ):
-        # pred_hand_verts = TENSOR[NHANDVERTS, 3]
-        selected_hand_verts = pred_hand_verts[concat_hand_vert_idx, :]  # TENSOR[NCC, 3]
-        # compute offset vector from object to hand
-        offset_vectors = selected_hand_verts - concat_obj_vert_3d  # TENSOR[NCC, 3]
-        # compute inner product (not normalized)
-        inner_product = torch.einsum("bi,bi->b", offset_vectors, concat_obj_normal)
-        thresholded_value = constant * torch.pow(
-            torch.exp(torch.clamp(-inner_product, -threshold, threshold)), 2
-        )  # TENSOR[NCC, ]
-        # res = torch.mean(torch.pow(thresholded_value, 2), dim=0)
-        res = torch.sum(thresholded_value, dim=0)
-        return res
-
-    @staticmethod
-    def full_repulsion_loss(
-        pred_hand_verts,
-        pred_full_obj_verts,
-        pred_full_obj_normal,
-        query_candidate=50,
-        query=0.020,
-        constant=5e-4,
-        threshold=0.080,
-        offset=0.000,
-    ):
-        # get basic dim
-        n_points_obj = pred_full_obj_verts.shape[0]
-        # pairwise dist
-        dist_mat = pairwise_dist(pred_full_obj_verts, pred_hand_verts)
-        # sort in axis 1 and get candidates
-        sort_idx = torch.argsort(dist_mat, dim=1)[:, 0:query_candidate]  # TENSOR[NPO, CANDI]
-        # dist_mask
-        dist_mask_bool = dist_mat[torch.arange(n_points_obj)[:, None], sort_idx] < query * query
-        calc_mask = torch.any(dist_mask_bool, dim=1).long()
-        if torch.sum(calc_mask) > 0:
-            dist_mask = dist_mask_bool.float()
-            # index and offset
-            indexed_hand = pred_hand_verts[sort_idx]  # TENSOR[NPO, CANDI, 3]
-            offset_vec = indexed_hand - pred_full_obj_verts.unsqueeze(1)  # TENSOR[NPO, CANDI, 3]; TENSOR[NPO, 1, 3]
-            # inner product
-            inner_prod = torch.einsum("bni,bi->bn", offset_vec, pred_full_obj_normal)  # TENSOR[NPO, CANDI]
-            thresholded_value = constant * torch.pow(
-                torch.exp(torch.clamp(-inner_prod - offset, -threshold - offset, threshold - offset)), 2,
-            )
-            thresholded_value = thresholded_value * dist_mask
-            res = torch.sum(thresholded_value) / torch.sum(calc_mask)
-        else:
-            res = torch.Tensor([0.0]).float().to(pred_hand_verts.device)
-        return res
-
-
-class HandOptimizer:
+class GeOptimizer:
     def __init__(
         self,
         device,
@@ -383,21 +148,6 @@ class HandOptimizer:
             tip_anchor_mask, torch.Tensor([1.0]).to(self.device), torch.Tensor([0.1]).to(self.device)
         ).to(self.device)
 
-        # prepare essentials for repulsion loss
-        # obj_vert_idx_list = []
-        # hand_vert_idx_list = []
-        # for vertex_id, contact_region_id in enumerate(obj_contact_region):
-        #     selected_hand_vert_mask = get_region_palm_mask(
-        #         contact_region_id, None, hand_region_assignment, hand_palm_vertex_mask
-        #     )
-        #     selected_hand_vert_idx = torch.where(selected_hand_vert_mask)[0]
-        #     repeat_times = selected_hand_vert_idx.shape[0]
-        #     obj_vertex_idx = torch.ones((repeat_times,), dtype=torch.long) * vertex_id
-        #     obj_vert_idx_list.append(obj_vertex_idx)
-        #     hand_vert_idx_list.append(selected_hand_vert_idx)
-        # self.const_val["concat_hand_vert_idx"] = torch.cat(hand_vert_idx_list, dim=0)
-        # self.const_val["concat_obj_vert_idx"] = torch.cat(obj_vert_idx_list, dim=0)
-
         # hand faces & edges
         self.const_val["hand_faces"] = self.mano_layer.th_faces
         self.const_val["static_verts"] = self.get_static_hand_verts()
@@ -477,7 +227,9 @@ class HandOptimizer:
                     init_val, dtype=torch.float, requires_grad=True, device=self.device
                 )
                 init_val_true = np.array([[1.0, 0.0, 0.0, 0.0]] * n_var_pose).astype(np.float32)
-                self.const_val["hand_pose_init_val"] = torch.tensor(init_val_true, dtype=torch.float, device=self.device)
+                self.const_val["hand_pose_init_val"] = torch.tensor(
+                    init_val_true, dtype=torch.float, device=self.device
+                )
                 self.ctrl_val["optimize_hand_pose"] = True
         elif hand_pose_gt is None and hand_pose_init is not None:
             # full init provided
@@ -666,8 +418,11 @@ class HandOptimizer:
         rebuild_joints = rebuild_joints + vec_tsl
         rebuild_verts = rebuild_verts + vec_tsl
         rebuild_transf = rebuild_transf + torch.cat(
-            (torch.cat((torch.zeros(3, 3).to(self.device), vec_tsl.view(3, -1)), 1), torch.zeros(1, 4).to(self.device),),
-            0,
+            [
+                torch.cat([torch.zeros(3, 3).to(self.device), vec_tsl.view(3, -1)], dim=1),
+                torch.zeros(1, 4).to(self.device),
+            ],
+            dim=0,
         )
         rebuild_verts_squeezed = rebuild_verts.squeeze(0)
 
@@ -680,16 +435,14 @@ class HandOptimizer:
         # dispatch obj var
         if ctrl_val["optimize_obj"]:
             obj_verts = self.transf_vectors(
-                const_val["obj_verts_3d_can"], opt_val["obj_tsl_var"], opt_val["obj_rot_var"],
+                const_val["obj_verts_3d_can"],
+                opt_val["obj_tsl_var"],
+                opt_val["obj_rot_var"],
             )
-            # concat_obj_verts = obj_verts[const_val["concat_obj_vert_idx"]]
-            # concat_obj_normals = self.transf_vectors(
-            #     const_val["obj_normals_can"][const_val["concat_obj_vert_idx"]],
-            #     torch.zeros(3, dtype=torch.float, device=self.device),
-            #     opt_val["obj_rot_var"],
-            # )
             full_obj_verts = self.transf_vectors(
-                const_val["full_obj_verts_3d"], opt_val["obj_tsl_var"], opt_val["obj_rot_var"],
+                const_val["full_obj_verts_3d"],
+                opt_val["obj_tsl_var"],
+                opt_val["obj_rot_var"],
             )
             full_obj_normals = self.transf_vectors(
                 const_val["full_obj_normals"],
@@ -698,23 +451,18 @@ class HandOptimizer:
             )
         else:
             obj_verts = const_val["obj_verts_3d_gt"]
-            # concat_obj_verts = obj_verts[const_val["concat_obj_vert_idx"]]
-            # concat_obj_normals = const_val["obj_normals_gt"][const_val["concat_obj_vert_idx"]]
             full_obj_verts = const_val["full_obj_verts_3d"]
             full_obj_normals = const_val["full_obj_normals"]
 
         # contact loss
-        contact_loss = WorldLoss.contact_loss(
+        contact_loss = FieldLoss.contact_loss(
             anchor_pos,
             obj_verts[const_val["indexed_vertex_id"]],
             const_val["indexed_anchor_elasti"],
             const_val["indexed_elasti_k"],
         )
         # repulsion loss
-        # repulsion_loss = WorldLoss.repulsion_loss(
-        #     rebuild_verts_squeezed, const_val["concat_hand_vert_idx"], concat_obj_verts, concat_obj_normals,
-        # )
-        repulsion_loss = WorldLoss.full_repulsion_loss(
+        repulsion_loss = FieldLoss.full_repulsion_loss(
             rebuild_verts_squeezed,
             full_obj_verts,
             full_obj_normals,
@@ -746,13 +494,6 @@ class HandOptimizer:
             edge_loss = HandLoss.edge_len_loss(
                 rebuild_verts_squeezed, const_val["hand_edges"], const_val["static_edge_len"]
             )
-
-            # n_var_pose = len(const_val["hand_pose_var_idx"])
-            # zero_val_np = np.array([[1.0, 0.0, 0.0, 0.0]] * n_var_pose).astype(np.float32)
-            # zero_val = torch.tensor(zero_val_np, dtype=torch.float, device=self.device)
-            # pose_reg_loss_to_zero = HandLoss.pose_reg_loss(
-            #     var_hand_pose_normalized[const_val["hand_pose_var_idx"]], zero_val
-            # )
         else:
             quat_norm_loss = torch.Tensor([0.0]).to(self.device)
             pose_reg_loss = torch.Tensor([0.0]).to(self.device)
@@ -781,17 +522,17 @@ class HandOptimizer:
             obj_transf_loss = torch.Tensor([0.0]).to(self.device)
 
         loss = (
-            # HAND SELF LOSS
+            # ============= HAND ANATOMICAL LOSS
             1.0 * quat_norm_loss
             + 1.0 * angle_limit_loss
             + 1.0 * edge_loss
             + 0.1 * joint_b_axis_loss
             + 0.1 * joint_u_axis_loss
             + 0.1 * joint_l_limit_loss
-            # CONTACT LOSS
+            # ============= ELAST POTENTIONAL ENERGY
             + coef_val["lambda_contact_loss"] * contact_loss
             + coef_val["lambda_repulsion_loss"] * repulsion_loss
-            # REG LOSS
+            # ============= OFFSET LOSS
             + 1.0 * pose_reg_loss
             + 1.0 * shape_reg_loss
             + 1.0 * hand_tsl_loss
@@ -840,6 +581,7 @@ class HandOptimizer:
             bar = range(self.n_iter)
 
         loss = torch.Tensor([1000.0]).to(self.device)
+        loss_dict = {}
         for _ in bar:
             if self.optimizing:
                 self.optimizer.zero_grad()
@@ -870,7 +612,7 @@ class HandOptimizer:
                         + "Conta={:.3e}, Repul={:.3e}, OT={:.3e}".format(
                             loss_dict["contact_loss"],  # Conta
                             loss_dict["repulsion_loss"],  # Repul
-                            loss_dict["obj_transf_loss"],
+                            loss_dict["obj_transf_loss"],  # OT
                         )
                     )
                 except:
@@ -918,7 +660,11 @@ class HandOptimizer:
         rebuild_verts = rebuild_verts + vec_tsl
         rebuild_joints = rebuild_joints + vec_tsl
         rebuild_transf = rebuild_transf + torch.cat(
-            (torch.cat((torch.zeros((3, 3), device=device), vec_tsl.T), 1), torch.zeros((1, 4), device=device),), 0,
+            [
+                torch.cat((torch.zeros((3, 3), device=device), vec_tsl.T), dim=1),
+                torch.zeros((1, 4), device=device),
+            ],
+            dim=0,
         )
         if squeeze_out:
             rebuild_verts, rebuild_joints, rebuild_transf = (
@@ -984,12 +730,6 @@ class HandOptimizer:
             self.runtime_vis["obj_mesh"].compute_vertex_normals()
             if not has_rot:
                 for i in range(16):
-                    # self.runtime_vis["axis"][i] = self.runtime_vis["axis"][i].rotate(transf[i][:3, :3],
-                    #                                                                  center=(0, 0, 0))
-                    # self.runtime_vis["axis"][i] = self.runtime_vis["axis"][i].translate(transf[i][:3, 3].T)
-                    #
-                    # self.runtime_vis["window"].update_geometry(self.runtime_vis["axis"][i])
-
                     if not i:
                         continue
                     b_rot = caculate_align_mat(b_axis[i - 1])
@@ -1027,9 +767,6 @@ class HandOptimizer:
                 break
 
         for i in range(16):
-            # self.runtime_vis["axis"][i] = self.runtime_vis["axis"][i].translate(-transf[i][:3, 3].T)
-            # self.runtime_vis["axis"][i] = self.runtime_vis["axis"][i].rotate(np.linalg.inv(transf[i][:3, :3]),
-            #                                                                  center=(0, 0, 0))
             if not i:
                 continue
             self.runtime_vis["b_axis"][i] = self.runtime_vis["b_axis"][i].translate(-hand_transf[i][:3, 3].T)
@@ -1049,6 +786,38 @@ class HandOptimizer:
                 hand_transf[i][:3, :3].T, center=(0, 0, 0)
             )
             self.runtime_vis["l_axis"][i] = self.runtime_vis["l_axis"][i].rotate(l_rot_ms[i - 1].T, center=(0, 0, 0))
+        return
+
+
+def caculate_align_mat(vec):
+    vec = vec / np.linalg.norm(vec)
+    z_unit_Arr = np.array([0, 0, 1])
+
+    z_mat = np.array(
+        [
+            [0, -z_unit_Arr[2], z_unit_Arr[1]],
+            [z_unit_Arr[2], 0, -z_unit_Arr[0]],
+            [-z_unit_Arr[1], z_unit_Arr[0], 0],
+        ]
+    )
+
+    z_c_vec = np.matmul(z_mat, vec)
+    z_c_vec_mat = np.array(
+        [
+            [0, -z_c_vec[2], z_c_vec[1]],
+            [z_c_vec[2], 0, -z_c_vec[0]],
+            [-z_c_vec[1], z_c_vec[0], 0],
+        ]
+    )
+
+    if np.dot(z_unit_Arr, vec) == -1:
+        qTrans_Mat = -np.eye(3, 3)
+    elif np.dot(z_unit_Arr, vec) == 1:
+        qTrans_Mat = np.eye(3, 3)
+    else:
+        qTrans_Mat = np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(z_unit_Arr, vec))
+
+    return qTrans_Mat
 
 
 def init_runtime_viz(
@@ -1064,17 +833,12 @@ def init_runtime_viz(
     hand_mesh_gt = o3d.geometry.TriangleMesh()
     hand_mesh_gt.triangles = o3d.utility.Vector3iVector(hand_faces)
     hand_mesh_gt.vertices = o3d.utility.Vector3dVector(hand_verts_gt)
-    hand_mesh_gt.vertex_colors = o3d.utility.Vector3dVector(np.array([[0.0, 0.0, 1.0], ] * len(hand_verts_gt)))
+    hand_mesh_gt.vertex_colors = o3d.utility.Vector3dVector(np.array([[0.0, 0.0, 1.0]] * len(hand_verts_gt)))
     hand_mesh_gt.compute_vertex_normals()
-    # hand_mesh_init = o3d.geometry.TriangleMesh()
-    # hand_mesh_init.triangles = o3d.utility.Vector3iVector(hand_faces)
-    # hand_mesh_init.vertices = o3d.utility.Vector3dVector(hand_verts_init)
-    # # hand_mesh_init.vertex_colors = o3d.utility.Vector3dVector(np.array([[1.0, 0.0, 0.0],] * len(hand_verts_init)))
-    # hand_mesh_init.compute_vertex_normals()
     obj_mesh_gt = o3d.geometry.TriangleMesh()
     obj_mesh_gt.triangles = o3d.utility.Vector3iVector(obj_faces_cur)
     obj_mesh_gt.vertices = o3d.utility.Vector3dVector(obj_verts_gt)
-    obj_mesh_gt.vertex_colors = o3d.utility.Vector3dVector(np.array([[1.0, 0.0, 0.0],] * len(obj_verts_gt)))
+    obj_mesh_gt.vertex_colors = o3d.utility.Vector3dVector(np.array([[1.0, 0.0, 0.0]] * len(obj_verts_gt)))
     obj_mesh_gt.compute_vertex_normals()
 
     hand_mesh_cur = o3d.geometry.TriangleMesh()
@@ -1086,9 +850,7 @@ def init_runtime_viz(
     obj_mesh.compute_vertex_normals()
     obj_mesh.vertex_colors = o3d.utility.Vector3dVector(obj_colors)
     vis_cur = o3d.visualization.VisualizerWithKeyCallback()
-    vis_cur.create_window(
-        window_name="Runtime Hand", width=1080, height=1080,
-    )
+    vis_cur.create_window(window_name="Runtime Hand", width=1080, height=1080)
     vis_cur.add_geometry(obj_mesh)
     vis_cur.add_geometry(hand_mesh_cur)
     vis_cur.add_geometry(hand_mesh_gt)
@@ -1097,7 +859,6 @@ def init_runtime_viz(
     up_axis_list = []
     left_axis_list = []
     for i in range(16):
-
         b = o3d.geometry.TriangleMesh.create_arrow(
             cylinder_radius=0.0015,
             cone_radius=0.002,
@@ -1202,7 +963,13 @@ def init_runtime_viz(
 
 
 def update_runtime_viz(
-    runtime_vis, hand_verts_gt, hand_verts_curr, obj_verts_gt, obj_verts_curr, hand_faces, obj_faces_cur
+    runtime_vis,
+    hand_verts_gt,
+    hand_verts_curr,
+    obj_verts_gt,
+    obj_verts_curr,
+    hand_faces,
+    obj_faces_cur,
 ):
     runtime_vis["hand_mesh"].vertices = o3d.utility.Vector3dVector(hand_verts_curr)
     runtime_vis["hand_mesh"].triangles = o3d.utility.Vector3iVector(hand_faces)
@@ -1210,19 +977,19 @@ def update_runtime_viz(
     runtime_vis["hand_mesh_gt"].vertices = o3d.utility.Vector3dVector(hand_verts_gt)
     runtime_vis["hand_mesh_gt"].triangles = o3d.utility.Vector3iVector(hand_faces)
     runtime_vis["hand_mesh_gt"].vertex_colors = o3d.utility.Vector3dVector(
-        np.array([[0.0, 0.0, 1.0],] * len(hand_verts_gt))
+        np.array([[0.0, 0.0, 1.0]] * len(hand_verts_gt))
     )
     runtime_vis["hand_mesh_gt"].compute_vertex_normals()
     runtime_vis["obj_mesh"].vertices = o3d.utility.Vector3dVector(obj_verts_curr)
     runtime_vis["obj_mesh"].triangles = o3d.utility.Vector3iVector(obj_faces_cur)
     runtime_vis["obj_mesh"].vertex_colors = o3d.utility.Vector3dVector(
-        np.array([[1.0, 1.0, 0.0],] * len(obj_verts_curr))
+        np.array([[1.0, 1.0, 0.0]] * len(obj_verts_curr))
     )
     runtime_vis["obj_mesh"].compute_vertex_normals()
     runtime_vis["obj_mesh_gt"].vertices = o3d.utility.Vector3dVector(obj_verts_gt)
     runtime_vis["obj_mesh_gt"].triangles = o3d.utility.Vector3iVector(obj_faces_cur)
     runtime_vis["obj_mesh_gt"].vertex_colors = o3d.utility.Vector3dVector(
-        np.array([[1.0, 0.0, 0.0],] * len(obj_verts_gt))
+        np.array([[1.0, 0.0, 0.0]] * len(obj_verts_gt))
     )
     runtime_vis["obj_mesh_gt"].compute_vertex_normals()
     runtime_vis["window"].update_geometry(runtime_vis["hand_mesh"])
