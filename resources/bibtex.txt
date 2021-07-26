@@ -1,6 +1,6 @@
-@inproceedings{author20XXtitle,
-  title={Please cite me},
-  author={Author, First and Author, Second and Author, Third},
-  booktitle={Conference},
-  year={20XX}
+@inproceedings{yang2021cpf,
+  title   = {CPF: Learning a Contact Potential Field to Model the Hand-Object Interaction},
+  author  = {Yang, Lixin and Zhan, Xinyu and Li, Kailin and Xu, Wenqiang and Li, Jiefeng and Lu, Cewu},
+  journal = {ICCV},
+  year    = {2021}
 }
