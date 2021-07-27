@@ -718,6 +718,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_workers", type=int, default=6)
+    parser.add_argument(
+        "--gpu", type=str, required=True, default=None, help="override enviroment var CUDA_VISIBLE_DEVICES"
+    )
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--hodata_path", type=str, default="data")
     parser.add_argument("--mano_root", type=str, default="assets/mano")
@@ -743,6 +746,8 @@ if __name__ == "__main__":
     parser.add_argument("--refresh_score", action="store_true")  # TODO
 
     args = parser.parse_args()
+    if args.gpu is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     # deal with dual flags
     if not args.hodata_use_cache and not args.hodata_no_use_cache:
