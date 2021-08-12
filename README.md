@@ -320,7 +320,7 @@ We provide pytorch implementation of our A-MANO in [lixiny/manopth](https://gith
 If you find this work helpful, please consider citing us:
 ```
 @inproceedings{yang2021cpf,
-    title={CPF: Learning a Contact Potential Field to Model the Hand-object Interaction},
+    title={CPF: Learning a Contact Potential Field to Model the Hand-Object Interaction},
     author={Yang, Lixin and Zhan, Xinyu and Li, Kailin and Xu, Wenqiang and Li, Jiefeng and Lu, Cewu},
     booktitle={ICCV},
     year={2021}
