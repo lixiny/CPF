@@ -27,7 +27,10 @@ $ conda activate cpf
 ```
 
 ## 3. Download asset files
-Down load our [[assets.zip](https://drive.google.com/file/d/1IP7dJimk0G-rixfDprgYE0F8kquB6PWf/view?usp=sharing)]  and unzip it as an `assets/` folder.
+
+> For researchers in China, you can alternatively download our preprocessed files at this mirror: [百度盘](https://pan.baidu.com/s/1x6SvGpNZqWlLA-cBZvv8Og) (`2tqv`)
+
+Download our [[assets.zip](https://drive.google.com/file/d/1IP7dJimk0G-rixfDprgYE0F8kquB6PWf/view?usp=sharing)]  and unzip it as an `assets/` folder.
 
 
 Download the MANO model files from [official MANO website](https://mano.is.tue.mpg.de/), and put it into `assets/mano/`.
