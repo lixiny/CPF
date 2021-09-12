@@ -315,7 +315,7 @@ Testing on the full dataset may take a while ( 0.5 ~ 1.5 day ), thus we also pro
 
 ## Anatomically Constrained A-MANO
 
-We provide pytorch implementation of our A-MANO in [lixiny/manopth](https://github.com/lixiny/manopth), which is modified from the original [hassony2/manopth](https://github.com/hassony2/manopth). Thank [Yana Hasson](https://hassony2.github.io/) for providing the code.
+We provide pytorch implementation of our Anatomical Constrained MANO in [lixiny/manotorch](https://github.com/lixiny/manotorch), which is modified from the original [hassony2/manopth](https://github.com/hassony2/manopth). Thank [Yana Hasson](https://hassony2.github.io/) for providing the code.
 
 
 
