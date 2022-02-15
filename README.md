@@ -1,157 +1,80 @@
-# Contact Potential Field
-[[`Project Page`](https://lixiny.github.io/CPF)]
-
-
-This repo contains model, demo, and test codes of our paper:
-
-> [CPF: Learning a **C**ontact **P**otential **F**ield to Model the Hand-Object Interaction](https://arxiv.org/abs/2012.00924)    
-> Lixin Yang, Xinyu Zhan, Kailin Li, Wenqiang Xu, Jiefeng Li, Cewu Lu    
-> ICCV 2021    
-
+<!-- PROJECT LOGO -->
+<br />
 <p align="center">
-    <img src="teaser.png", width="100%">
+
+  <h1 align="center">CPF: Learning a Contact Potential Field to Model the Hand-Object Interaction </h1>
+
+  <p align="center">
+    <img src="docs/teaser.png"" alt="Logo" width="70%">
+  </p>
+  <p align="center">
+    ICCV, 2021
+    <br />
+    <a href="https://lixiny.github.io"><strong>Lixin Yang</strong></a>
+    ·
+    <a href=""><strong>Xinyu Zhan</strong></a>
+    ·
+    <a href=""><strong>Kailin Li</strong></a>
+    ·
+    <a href=""><strong>Wenqiang Xu</strong></a>
+    ·
+    <a href="https://jeffli.site"><strong>Jiefeng Li</strong></a>
+    ·
+    <a href="https://mvig.sjtu.edu.cn"><strong>Cewu Lu</strong></a>
+  </p>
+
+  <p align="center">
+    <!-- <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"></a><br><br> -->
+    <a href='https://arxiv.org/abs/2012.00924'>
+      <img src='https://img.shields.io/badge/Paper-PDF-green?style=flat&logo=arXiv&logoColor=green' alt='Paper PDF'>
+    </a>
+    <a href='https://lixiny.github.io/CPF' style='padding-left: 0.5rem;'>
+      <img src='https://img.shields.io/badge/Project-Page-blue?style=flat&logo=Google%20chrome&logoColor=blue' alt='Project Page'>
+    <a href='https://youtu.be/MLGpBFYiEQ0' style='padding-left: 0.5rem;'>
+      <img src='https://img.shields.io/badge/Youtube-Video-red?style=flat&logo=youtube&logoColor=red' alt='Youtube Video'>
+    </a>
+  </p>
 </p>
 
+<br />
 
-# Guide to the Demo
-## 1. Get our code:
-```shell script
-$ git clone --recursive https://github.com/lixiny/CPF.git
-$ cd CPF
-```
-## 2. Set up your new environment:
+This repo contains model, demo, and test codes.
+<!-- TABLE OF CONTENTS -->
+<details open="open" style='padding: 10px; border-radius:5px 30px 30px 5px; border-style: solid; border-width: 1px;'>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#installation">Installation</a>
+    </li>
+    <li>
+      <a href="#demo">Demo</a>
+    </li>
+    <li>
+      <a href="#evaluation">Evaluation</a>
+    </li>
+    <li>
+      <a href="#anatomical-constrained-a-mano">Anatomical Constrained A-MANO</a>
+    </li>
+    <li>
+      <a href="#todo">TODO</a>
+    </li>
+    <li>
+      <a href="#citation">Citation</a>
+    </li>
+  </ol>
+</details>
+<br />
+<br />
 
-```shell script
-$ conda env create -f environment.yaml
-$ conda activate cpf
-```
-
-## 3. Download asset files
-
-> For researchers in China, you can alternatively download our preprocessed files at this mirror: [百度盘](https://pan.baidu.com/s/1x6SvGpNZqWlLA-cBZvv8Og) (`2tqv`)
-
-Download our [[assets.zip](https://drive.google.com/file/d/1IP7dJimk0G-rixfDprgYE0F8kquB6PWf/view?usp=sharing)]  and unzip it as an `assets/` folder.
+## Installation
+Following the [Installation Instruction](docs/Installation.md) to setup environment, assets, datasets and models.
 
 
-Download the MANO model files from [official MANO website](https://mano.is.tue.mpg.de/), and put it into `assets/mano/`.
-We currently only use the `MANO_RIGHT.pkl`
-
-Now your `assets/` folder should look like this:
-```
-assets/
-├── anchor/
-│   ├── anchor_mapping_path.pkl
-│   ├── anchor_weight.txt
-│   ├── face_vertex_idx.txt
-│   └── merged_vertex_assignment.txt
-├── closed_hand/
-│   └── hand_mesh_close.obj
-├── fhbhands_fits/
-│   ├── Subject_1/
-│   │   ├── ...
-│   ├── Subject_2/
-|   ├── ...
-├── hand_palm_full.txt
-└── mano/
-    ├── fhb_skel_centeridx9.pkl
-    ├── info.txt
-    ├── LICENSE.txt
-    └── MANO_RIGHT.pkl
-```
-## 4. Download dataset
-### First-Person Hand Action Benchmark (fhb)
-
-Download and unzip the First-Person Hand Action Benchmark dataset following the [official instructions](https://github.com/guiggh/hand_pose_action) to the `data/fhbhands/` folder
-
-If everything is correct, your `data/fhbhands/` should look like this:
-```
-.
-├── action_object_info.txt
-├── action_sequences_normalized/
-├── change_log.txt
-├── data_split_action_recognition.txt
-├── file_system.jpg
-├── Hand_pose_annotation_v1/
-├── Object_6D_pose_annotation_v1_1/
-├── Object_models/
-├── Subjects_info/
-├── Video_files/
-├── Video_files_480/ # Optionally
-```
-Optionally, resize the images (speeds up training !) based on the [handobjectconsist/reduce_fphab.py](https://github.com/hassony2/handobjectconsist/blob/master/reduce_fphab.py).
-```shell
-$ python reduce_fphab.py
-```
-Download our [[fhbhands_supp.zip](https://drive.google.com/file/d/1hY_gyrZD_RU3nxI90oJZ6tNkwxKYhUGs/view?usp=sharing)] and unzip it as `data/fhbhands_supp`:
-
-Download our [[fhbhands_example.zip](https://drive.google.com/file/d/14wxN23RmVCSphHIV00qk-ht00yfdu_Hu/view?usp=sharing)] and unzip it as `data/fhbhands_example`.
-This `fhbhands_example/` contains 10 samples that are designed to demonstrate our pipeline.
-
-Currently, your `data/` folder should look like this:
-
-```
-data/
-├── fhbhands/
-├── fhbhands_supp/
-│   ├── Object_models/
-│   └── Object_models_binvox/
-├── fhbhands_example/
-│   ├── annotations/
-│   ├── images/
-│   ├── object_models/
-│   └── sample_list.txt
-```
-
-### HO3D
-Download and unzip the [HO3D](https://www.tugraz.at/index.php?id=40231) dataset following the [official instructions](https://github.com/shreyashampali/ho3d?) to the `data/HO3D` folder.
-if everything is correct, the HO3D & YCB folder in your `data/` folder should look like this:
-```
-data/
-├── HO3D/
-│   ├── evaluation/
-│   ├── evaluation.txt
-│   ├── train/
-│   └── train.txt
-├── YCB_models/
-│   ├── 002_master_chef_can/
-│   ├── ...
-...
-```
-
-Download our [[YCB_models_supp.zip](https://drive.google.com/file/d/1daSKseF-PrVLwd4wIcF2PLtAjYBF2XH1/view?usp=sharing)] and place it at `data/YCB_models_supp`
-
-Finally, the `data/` folder should have a structure like:
-```
-data/
-├── fhbhands/
-├── fhbhands_supp/
-├── fhbhands_example/
-├── HO3D/
-├── YCB_models/
-├── YCB_models_supp/
-```
-
-## 5. Download pre-trained checkpoints
-download our pre-trained [[CPF_checkpoints.zip](https://drive.google.com/file/d/1JWu5TSTTIWvNrTZmmjhTEm4xGqv_cMhd/view?usp=sharing)], unzip it as `CPF_checkpoints/` folder:
-```
-CPF_checkpoints/
-├── honet/
-│   ├── fhb/
-│   ├── ho3dofficial/
-│   └── ho3dv1/
-├── picr/
-│   ├── fhb/
-│   ├── ho3dofficial/
-│   └── ho3dv1/
-```
-
-## 6. Launch visualization
-
-> Replace the `${GPU_ID}` with a list of integers that indicates the GPU id.   
-> eg: `--gpu 0,1`; `--gpu 0`; `--gpu 0,1,2,3`
+## Demo
+Notice: require active screen. 
+### visualize GeO fitting pipeline
 
 We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that only contains 10 samples to demonstrate our pipeline.
-Notice: this demo requires active screen for visualizing. Press `q` in the "runtime hand" window to start fitting.
 
 ```shell
 # Only support single GPU !
@@ -160,166 +83,85 @@ $ python scripts/run_demo.py \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar \
     --honet_mano_fhb_hand
 ```
-
+<p align="left">
+  <img src="docs/teaser_fitting.gif", width="40%"><br/>Press q in the "runtime hand" window to start fitting
+</p>
 <p align="center">
-    <img src="teaser_fitting.gif", width="60%">
+    
 </p>
 
-## 7. Test on full dataset (FHB, HO3D v1/v2)
+### visualize A-MANO'S anchor position
+This demo shows the anochrs positions on MANO hand's surface
+```shell
+$ python scripts/recover_anchor.py --render
+```
+## Evaluation
 
-We provide shell srcipts to test on the full dataset to approximately reproduce our results.
+We provide shell srcipts for evaluating on FHB, HO3Dv1 and v2.
 
-### FHB
+
+### FHB dataset
 dump the results of HoNet and PiCR:
 ```shell
 # recommend 2 GPUs
-$ python scripts/dump_picr_res.py \
-    --gpu ${GPU_ID} \
-    --dist_master_addr localhost \
-    --dist_master_port 12355 \
-    --exp_keyword fhb \
-    --train_datasets fhb \
-    --train_splits train \
-    --val_dataset fhb \
-    --val_split test \
-    --split_mode actions \
-    --batch_size 8 \
-    --dump_eval \
-    --dump \
-    --vertex_contact_thresh 0.8 \
-    --filter_thresh 5.0 \
-    --dump_prefix common/picr \
-    --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar
+$ export GPU_ID=0,1 && sh ./scripts/dump_HoNetPiCR_FHB.sh
 ```
-and reload the GeO optimizer:
+and fit GeO optimizer:
 ```shell
-# setting 1: hand-only
-# CUDA_VISIBLE_DEVICES=0,1,2,3
+# setting 1: hand-only 
 # recommend 4 GPUs
-$ python scripts/eval_geo.py \
-    --gpu ${GPU_ID} \
-    --n_workers 16 \
-    --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
-    --mode hand
+$ export GPU_ID=0,1,2,3 && sh ./scripts/fit_GeO_handonly_FHB.sh
 
 # setting 2: hand-obj
-$ python scripts/eval_geo.py \
-    --gpu ${GPU_ID} \
-    --n_workers 16 \
-    --data_path common/picr/fhbhands/test_actions_mf1.0_rf0.25_fct5.0_ec \
-    --mode hand_obj \
-    --compensate_tsl
+$ export GPU_ID=0,1,2,3 && sh ./scripts/fit_GeO_handobj_FHB.sh
 ```
 ### HO3Dv1
-dump:
+dump the results of HoNet and PiCR:
 ```shell
 # recommend 2 GPUs
-$ python scripts/dump_picr_res.py  \
-    --gpu ${GPU_ID} \
-    --dist_master_addr localhost \
-    --dist_master_port 12356 \
-    --exp_keyword ho3dv1 \
-    --train_datasets ho3d \
-    --train_splits train \
-    --val_dataset ho3d \
-    --val_split test \
-    --split_mode objects \
-    --batch_size 4 \
-    --dump_eval \
-    --dump \
-    --vertex_contact_thresh 0.8 \
-    --filter_thresh 5.0 \
-    --dump_prefix common/picr_ho3dv1 \
-    --init_ckpt CPF_checkpoints/picr/ho3dv1/checkpoint_300.pth.tar
+$ export GPU_ID=0,1 && sh ./scripts/dump_HoNetPiCR_HO3Dv1.sh
 ```
-and reload optimizer:
+and fit GeO optimizer:
 ```shell
 # hand-only
-# CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # recommend 8 GPUs
-$ python scripts/eval_geo.py \
-    --gpu ${GPU_ID}
-    --n_workers 24 \
-    --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
-    --lr 1e-2 \
-    --n_iter 500 \
-    --hodata_no_use_cache \
-    --lambda_contact_loss 10.0 \
-    --lambda_repulsion_loss 4.0 \
-    --repulsion_query 0.030 \
-    --repulsion_threshold 0.080 \
-    --mode hand
+$ export GPU_ID=0,1,2,3,4,5,6,7 && sh ./scripts/fit_GeO_handonly_HO3Dv1.sh
 
 # hand-obj
 # recommend 8 GPUs
-$ python scripts/eval_geo.py \
-    --gpu ${GPU_ID} \
-    --n_workers 24 \
-    --data_path common/picr_ho3dv1/HO3D/test_objects_mf1_likev1_fct5.0_ec/ \
-    --lr 1e-2 \
-    --n_iter 500  \
-    --hodata_no_use_cache \
-    --lambda_contact_loss 10.0 \
-    --lambda_repulsion_loss 6.0 \
-    --repulsion_query 0.030 \
-    --repulsion_threshold 0.080 \
-    --mode hand_obj
-
+$ export GPU_ID=0,1,2,3,4,5,6,7 && sh ./scripts/fit_GeO_handobj_HO3Dv1.sh
 ```
-### HO3Dofficial
-dump:
+### HO3Dv2 (version 2)
+dump the results of HoNet and PiCR:
 ```shell
 # recommend 2 GPUs
-$ python scripts/dump_picr_res.py  \
-    --gpu 0,1 \
-    --dist_master_addr localhost \
-    --dist_master_port 12356 \
-    --exp_keyword ho3dofficial \
-    --train_datasets ho3d \
-    --train_splits val \
-    --val_dataset ho3d \
-    --val_split test \
-    --split_mode official \
-    --batch_size 4 \
-    --dump_eval \
-    --dump \
-    --test_dump \
-    --vertex_contact_thresh 0.8 \
-    --filter_thresh 5.0 \
-    --dump_prefix common/picr_ho3dofficial \
-    --init_ckpt CPF_checkpoints/picr/ho3dofficial/checkpoint_300.pth.tar
+$ export GPU_ID=0,1 && sh ./scripts/dump_HoNetPiCR_HO3Dv2.sh
 ```
-and reload optimizer:
+and fit GeO optimizer:
 ```shell
-# CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # recommend 8 GPUs
-$ python scripts/eval_geo.py \
-    --gpu ${GPU_ID} \
-    --n_workers 24 \
-    --data_path common/picr_ho3dofficial/HO3D/test_official_mf1_likev1_fct\(x\)_ec/  \
-    --lr 1e-2 \
-    --n_iter 500 \
-    --hodata_no_use_cache \
-    --lambda_contact_loss 10.0 \
-    --lambda_repulsion_loss 2.0 \
-    --repulsion_query 0.030 \
-    --repulsion_threshold 0.080 \
-    --mode hand_obj
+$ export GPU_ID=0,1,2,3,4,5,6,7 && sh ./scripts/fit_GeO_handobj_HO3Dv2.sh
 ```
 
+### evaluation results
+Above scripts may take a while ( ~ 1 day ). We also provide the results in [fitting_res](docs/fitting_res.txt).
+
+## Anatomical Constrained A-MANO
+
+We provide pytorch implementation of our Anatomical Constrained MANO in [lixiny/manopth](https://github.com/lixiny/manopth), which is modified from the original [hassony2/manopth](https://github.com/hassony2/manopth).
 
 
-## Results
+## TODO
 
-Testing on the full dataset may take a while ( 0.5 ~ 1.5 day ), thus we also provide our test results at [fitting_res.txt](https://github.com/lixiny/CPF/blob/main/fitting_res.txt).
+- [x] testing code and pretrained models
+  - [x] HoNet (FHB, HO3Dv1/v2)
+  - [x] PiCR (FHB, HO3Dv1/v2)
+- [x] fitting code of GeO, both *hand-only* and *hand-object* (FHB, HO3Dv1/v2)
+- [ ] training code
+- [ ] contact region visualization
 
-## Anatomically Constrained A-MANO
 
-We provide pytorch implementation of our Anatomical Constrained MANO in [lixiny/manotorch](https://github.com/lixiny/manotorch), which is modified from the original [hassony2/manopth](https://github.com/hassony2/manopth). Thank [Yana Hasson](https://hassony2.github.io/) for providing the code.
-
-
-
-## Citation
+# Citation
 If you find this work helpful, please consider citing us:
 ```
 @inproceedings{yang2021cpf,
