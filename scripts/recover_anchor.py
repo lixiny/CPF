@@ -20,7 +20,12 @@ def get_colors(num_color, alpha=1.0, shuffle=False):
 def main(render=False, face_vertex_index=None, anchor_weight=None):
     # init mano
     mano_layer = ManoLayer(
-        mano_root="assets/mano", use_pca=False, ncomps=12, flat_hand_mean=True, center_idx=9, return_transf=True,
+        mano_root="assets/mano",
+        use_pca=False,
+        ncomps=12,
+        flat_hand_mean=True,
+        center_idx=9,
+        return_transf=True,
     )
     faces = np.array(mano_layer.th_faces).astype(np.long)
 
@@ -79,7 +84,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--inpath", type=str, default="./assets/anchor")
+    parser.add_argument("--inpath", type=str, default="./assets")
     parser.add_argument("--render", action="store_true")
     args = parser.parse_args()
     fvi, aw, _, _ = anchor_load_driver(args.inpath)

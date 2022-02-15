@@ -7,6 +7,14 @@ from pprint import pprint
 import numpy as np
 import torch
 import trimesh
+from hocontact.hodatasets.hodata import HOdata, ho_collate
+from hocontact.models.picr import PicrHourglassPointNet
+from hocontact.postprocess.geo_optimizer import GeOptimizer, init_runtime_viz, update_runtime_viz
+from hocontact.utils import ioutils
+from hocontact.utils.anatomyutils import AnatomyMetric
+from hocontact.utils.collisionutils import penetration_loss_hand_in_obj, solid_intersection_volume
+from hocontact.utils.contactutils import dumped_process_contact_info
+from hocontact.utils.disjointnessutils import region_disjointness_metric
 from liegroups import SO3
 from manopth.anchorutils import anchor_load, get_rev_anchor_mapping, masking_load_driver
 from manopth.manolayer import ManoLayer
@@ -15,19 +23,6 @@ from matplotlib import pyplot as plt
 from termcolor import cprint
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
-from hocontact.hodatasets.hodata import ho_collate, HOdata
-from hocontact.models.picr import PicrHourglassPointNet
-from hocontact.postprocess.geo_optimizer import (
-    GeOptimizer,
-    init_runtime_viz,
-    update_runtime_viz,
-)
-from hocontact.utils import io_utils
-from hocontact.utils.collision_utils import penetration_loss_hand_in_obj, solid_intersection_volume
-from hocontact.utils.contact_utils import dumped_process_contact_info
-from hocontact.utils.disjointness_utils import region_disjointness_metric
-from hocontact.utils.anatomy_utils import AnatomyMetric
 
 np.seterr(all="raise")
 plt.switch_backend("agg")
@@ -206,10 +201,11 @@ def picr_stage(args):
     exp_id = f"checkpoints/picr_geo_example/{dat_str}_{split_str}"
     exp_id = f"{exp_id}/{exp_keyword}"
 
-    io_utils.print_args(args)
+    ioutils.print_args(args)
 
     cprint(
-        f"Saving experiment logs, models, and training curves and images to {exp_id}", "white",
+        f"Saving experiment logs, models, and training curves and images to {exp_id}",
+        "white",
     )
 
     # ==================== Creating Datasets >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -226,7 +222,7 @@ def picr_stage(args):
         filter_thresh=10.0,
         synt_factor=1,
     )
-    io_utils.print_query(example_dataset.queries, desp="example_dataset_queries")
+    ioutils.print_query(example_dataset.queries, desp="example_dataset_queries")
     example_loader = DataLoader(
         example_dataset,
         batch_size=1,
@@ -261,18 +257,18 @@ def picr_stage(args):
         cprint("no initializing checkpoint provided. abort!", "red")
         exit()
     map_location = f"cuda:{rank}"
-    _ = io_utils.reload_checkpoint(model, resume_path=args.init_ckpt, as_parallel=False, map_location=map_location)
+    _ = ioutils.reload_checkpoint(model, resume_path=args.init_ckpt, as_parallel=False, map_location=map_location)
     # only weights is reloaded, others are dropped
 
     # ====== print model size information
-    cprint(f"Model total size == {io_utils.param_size(model)} MB")
-    cprint(f"  |  HONet total size == {io_utils.param_size(model.ho_net)} MB")
-    cprint(f"  |  BaseNet total size == {io_utils.param_size(model.base_net)} MB")
-    cprint(f"  \\  ContactHead total size == {io_utils.param_size(model.contact_head)} MB")
-    cprint(f"    |  EncodeModule total size == {io_utils.param_size(model.contact_head.encoder)} MB")
-    decode_vertex_contact_size = io_utils.param_size(model.contact_head.vertex_contact_decoder)
-    decode_contact_region_size = io_utils.param_size(model.contact_head.contact_region_decoder)
-    decode_anchor_elasti_size = io_utils.param_size(model.contact_head.anchor_elasti_decoder)
+    cprint(f"Model total size == {ioutils.param_size(model)} MB")
+    cprint(f"  |  HONet total size == {ioutils.param_size(model.ho_net)} MB")
+    cprint(f"  |  BaseNet total size == {ioutils.param_size(model.base_net)} MB")
+    cprint(f"  \\  ContactHead total size == {ioutils.param_size(model.contact_head)} MB")
+    cprint(f"    |  EncodeModule total size == {ioutils.param_size(model.contact_head.encoder)} MB")
+    decode_vertex_contact_size = ioutils.param_size(model.contact_head.vertex_contact_decoder)
+    decode_contact_region_size = ioutils.param_size(model.contact_head.contact_region_decoder)
+    decode_anchor_elasti_size = ioutils.param_size(model.contact_head.anchor_elasti_decoder)
     cprint(f"    |  DecodeModule_VertexContact total size == {decode_vertex_contact_size} MB")
     cprint(f"    |  DecodeModule_ContactRegion total size == {decode_contact_region_size} MB")
     cprint(f"    |  DecodeModule_AnchorElasti total size == {decode_anchor_elasti_size} MB")
@@ -388,12 +384,18 @@ def run_sample(
     # ==================== evaluate gt & dumped info >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # region
     hand_dist_before = torch.mean(
-        torch.norm(torch.from_numpy(hand_verts_np).float() - torch.from_numpy(hand_verts_adapt_np).float(), p=2, dim=1,)
+        torch.norm(
+            torch.from_numpy(hand_verts_np).float() - torch.from_numpy(hand_verts_adapt_np).float(),
+            p=2,
+            dim=1,
+        )
     ).item()
     # no joint score, as hand model different
     object_dist_before = torch.mean(
         torch.norm(
-            torch.from_numpy(obj_verts_3d_np).float() - torch.from_numpy(obj_verts_3d_adapt_np).float(), p=2, dim=1,
+            torch.from_numpy(obj_verts_3d_np).float() - torch.from_numpy(obj_verts_3d_adapt_np).float(),
+            p=2,
+            dim=1,
         )
     ).item()
     penetration_depth_gt = torch.sqrt(
@@ -476,10 +478,18 @@ def run_sample(
     ).item()
     # no joint score, as hand models differs
     object_dist_after = torch.mean(
-        torch.norm(torch.from_numpy(obj_verts_3d_adapt_np).float() - obj_verts_pred, p=2, dim=1,)
+        torch.norm(
+            torch.from_numpy(obj_verts_3d_adapt_np).float() - obj_verts_pred,
+            p=2,
+            dim=1,
+        )
     ).item()
     penetration_depth_after = torch.sqrt(
-        penetration_loss_hand_in_obj(hand_verts_pred, obj_verts_pred, torch.from_numpy(obj_faces_np).long(),)
+        penetration_loss_hand_in_obj(
+            hand_verts_pred,
+            obj_verts_pred,
+            torch.from_numpy(obj_faces_np).long(),
+        )
     ).item()
     obj_tsl_final_np = hoptim.obj_tsl_np()
     obj_rot_final_np = hoptim.obj_rot_np()
@@ -612,7 +622,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # environment arguments
     parser.add_argument(
-        "--gpu", type=str, default=None,
+        "--gpu",
+        type=str,
+        default=None,
     )
 
     # exp arguments
@@ -630,7 +642,10 @@ if __name__ == "__main__":
     parser.add_argument("--hg_blocks", type=int, default=1)
     parser.add_argument("--hg_classes", type=int, default=64)
     parser.add_argument(
-        "--obj_scale_factor", type=float, default=0.0001, help="Multiplier for scale prediction",
+        "--obj_scale_factor",
+        type=float,
+        default=0.0001,
+        help="Multiplier for scale prediction",
     )
     parser.add_argument("--honet_resnet_version", choices=[18, 50], default=18)
     parser.add_argument(
@@ -646,10 +661,16 @@ if __name__ == "__main__":
         help="Weight for 3D joints supervision, in camera space",
     )
     parser.add_argument(
-        "--honet_mano_lambda_shape", type=float, default=5e-07, help="Weight for hand shape regularization",
+        "--honet_mano_lambda_shape",
+        type=float,
+        default=5e-07,
+        help="Weight for hand shape regularization",
     )
     parser.add_argument(
-        "--honet_mano_lambda_pose_reg", type=float, default=5e-06, help="Weight for hand pose regularization",
+        "--honet_mano_lambda_pose_reg",
+        type=float,
+        default=5e-06,
+        help="Weight for hand pose regularization",
     )
     parser.add_argument(
         "--honet_obj_lambda_recov_verts3d",
@@ -664,7 +685,10 @@ if __name__ == "__main__":
         help="Weight for object vertices supervision, in 2d UV space",
     )
     parser.add_argument(
-        "--honet_obj_trans_factor", type=float, default=100, help="Multiplier for translation prediction",
+        "--honet_obj_trans_factor",
+        type=float,
+        default=100,
+        help="Multiplier for translation prediction",
     )
     parser.add_argument("--honet_mano_fhb_hand", action="store_true")
 

@@ -1,10 +1,10 @@
 from hocontact.models.picr import PicrHourglassPointNet
 from hocontact.hodatasets.hodata import HOdata, ho_collate
 from hocontact.utils.logger import logger
-from hocontact.utils.loss_utils import update_loss
+from hocontact.utils.lossutils import update_loss
 from hocontact.utils import eval as evalutils
 from hocontact.utils import dump as dumputils
-from hocontact.utils import io_utils
+from hocontact.utils import ioutils
 from hocontact.utils.eval.disteval import merge_evaluator
 from hocontact.utils.eval.summarize import summarize_evaluator_picr
 from hocontact.utils.dump.distdump import summarize_dumper_list
@@ -52,8 +52,8 @@ def dump_main(args):
     exp_id = f"{exp_id}/{exp_keyword}"
 
     logger.initialize(exp_id, "dump")
-    io_utils.print_args(args)
-    io_utils.save_args(args, exp_id, "opt")
+    ioutils.print_args(args)
+    ioutils.save_args(args, exp_id, "opt")
 
     logger.info(f"Saving experiment logs, models, and training curves and images to {exp_id}")
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -102,7 +102,7 @@ def dump_main_worker(rank, world_size, exp_id, args):
         )
         datasets.append(train_dataset)
         if rank == 0:
-            io_utils.print_query(train_dataset.queries, desp=f"training_set_{data_name}_queries")
+            ioutils.print_query(train_dataset.queries, desp=f"training_set_{data_name}_queries")
 
     train_dataset = ConcatDataset(datasets)
     train_dist_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=False)
@@ -169,7 +169,7 @@ def dump_main_worker(rank, world_size, exp_id, args):
         logger.error("no initializing checkpoint provided. abort!", "red")
         exit()
     map_location = f"cuda:{rank}"
-    _ = io_utils.reload_checkpoint(
+    _ = ioutils.reload_checkpoint(
         model,
         resume_path=args.init_ckpt,
         as_parallel=True,
@@ -180,14 +180,14 @@ def dump_main_worker(rank, world_size, exp_id, args):
 
     # ====== print model size information
     if rank == 0:
-        logger.info(f"Model total size == {io_utils.param_size(model.module)} MB")
-        logger.info(f"  |  HONet total size == {io_utils.param_size(model.module.ho_net)} MB")
-        logger.info(f"  |  BaseNet total size == {io_utils.param_size(model.module.base_net)} MB")
-        logger.info(f"  \\  ContactHead total size == {io_utils.param_size(model.module.contact_head)} MB")
-        logger.info(f"    |  EncodeModule total size == {io_utils.param_size(model.module.contact_head.encoder)} MB")
-        decode_vertex_contact_size = io_utils.param_size(model.module.contact_head.vertex_contact_decoder)
-        decode_contact_region_size = io_utils.param_size(model.module.contact_head.contact_region_decoder)
-        decode_anchor_elasti_size = io_utils.param_size(model.module.contact_head.anchor_elasti_decoder)
+        logger.info(f"Model total size == {ioutils.param_size(model.module)} MB")
+        logger.info(f"  |  HONet total size == {ioutils.param_size(model.module.ho_net)} MB")
+        logger.info(f"  |  BaseNet total size == {ioutils.param_size(model.module.base_net)} MB")
+        logger.info(f"  \\  ContactHead total size == {ioutils.param_size(model.module.contact_head)} MB")
+        logger.info(f"    |  EncodeModule total size == {ioutils.param_size(model.module.contact_head.encoder)} MB")
+        decode_vertex_contact_size = ioutils.param_size(model.module.contact_head.vertex_contact_decoder)
+        decode_contact_region_size = ioutils.param_size(model.module.contact_head.contact_region_decoder)
+        decode_anchor_elasti_size = ioutils.param_size(model.module.contact_head.anchor_elasti_decoder)
         logger.info(f"    |  DecodeModule_VertexContact total size == {decode_vertex_contact_size} MB")
         logger.info(f"    |  DecodeModule_ContactRegion total size == {decode_contact_region_size} MB")
         logger.info(f"    |  DecodeModule_AnchorElasti total size == {decode_anchor_elasti_size} MB")
@@ -348,7 +348,9 @@ def dumping_epoch_pass(
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-def dumping_epoch_after(rank, exp_id, epoch_idx, train, use_eval=False, use_dump=False, tmp_dir=None, target_count=None):
+def dumping_epoch_after(
+    rank, exp_id, epoch_idx, train, use_eval=False, use_dump=False, tmp_dir=None, target_count=None
+):
     # wait for all ranks done there epoch
     torch.distributed.barrier()
     if rank == 0:
@@ -402,15 +404,22 @@ if __name__ == "__main__":
     # Dataset params
     parser.add_argument("--data_root", type=str, default="data", help="hodata root")
     parser.add_argument(
-        "--train_datasets", choices=["ho3d", "ho3dsynt", "fhb", "fhbsynt"], default=["fhb"], nargs="+",
+        "--train_datasets",
+        choices=["ho3d", "ho3dsynt", "fhb", "fhbsynt"],
+        default=["fhb"],
+        nargs="+",
     )
     parser.add_argument(
-        "--val_dataset", choices=["ho3d", "fhb"], default="fhb",
+        "--val_dataset",
+        choices=["ho3d", "fhb"],
+        default="fhb",
     )
     parser.add_argument("--train_splits", default=["train"], nargs="+")
     parser.add_argument("--val_split", default="test", choices=["test", "train", "val", "trainval"])
     parser.add_argument(
-        "--split_mode", default="actions", choices=["objects", "actions", "official"],
+        "--split_mode",
+        default="actions",
+        choices=["objects", "actions", "official"],
     )
     parser.add_argument(
         "--mini_factor", type=float, default=1.0, help="Work on fraction of the datase for debugging purposes"
@@ -469,22 +478,35 @@ if __name__ == "__main__":
 
     # Loss parameters
     parser.add_argument(
-        "--contact_lambda_vertex_contact", type=float, default=10.0,
+        "--contact_lambda_vertex_contact",
+        type=float,
+        default=10.0,
     )
     parser.add_argument(
-        "--contact_lambda_contact_region", type=float, default=10.0,
+        "--contact_lambda_contact_region",
+        type=float,
+        default=10.0,
     )
     parser.add_argument(
-        "--contact_lambda_anchor_elasti", type=float, default=1.0,
+        "--contact_lambda_anchor_elasti",
+        type=float,
+        default=1.0,
     )
     parser.add_argument(
-        "--focal_loss_alpha", type=float, default=0.90,
+        "--focal_loss_alpha",
+        type=float,
+        default=0.90,
     )
     parser.add_argument(
-        "--focal_loss_gamma", type=int, default=2,
+        "--focal_loss_gamma",
+        type=int,
+        default=2,
     )
     parser.add_argument(
-        "--region_focal_loss_alpha", type=str, choices=["fhb", "ho3d"], default=None,
+        "--region_focal_loss_alpha",
+        type=str,
+        choices=["fhb", "ho3d"],
+        default=None,
     )
     parser.add_argument("--test_dump", action="store_false")
 

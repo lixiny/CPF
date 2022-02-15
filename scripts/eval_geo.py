@@ -1,35 +1,22 @@
-import sys
 import os
-import torch
-import torch.nn.functional as F
-import numpy as np
-from tqdm import tqdm
-import trimesh
 import pickle
-from liegroups import SO3
+import time
+import traceback
 
+import numpy as np
+import torch
+import trimesh
 from hocontact.hodatasets.cionline import CIOnline
 from hocontact.hodatasets.ciquery import CIAdaptQueries, CIDumpedQueries
 from hocontact.postprocess.geo_optimizer import GeOptimizer
-from hocontact.utils.collisionutils import (
-    batch_index_select,
-    batch_pairwise_dist,
-    batch_mesh_contains_points,
-    masked_mean_loss,
-    penetration_loss_hand_in_obj,
-    intersection_volume,
-    solid_intersection_volume,
-)
-from hocontact.utils.disjointnessutils import region_disjointness_metric
 from hocontact.utils.anatomyutils import AnatomyMetric
-from termcolor import colored, cprint
-import open3d as o3d
-from manopth.anchorutils import masking_load_driver, get_region_palm_mask
-from manopth.quatutils import angle_axis_to_quaternion, quaternion_to_angle_axis
+from hocontact.utils.collisionutils import penetration_loss_hand_in_obj, solid_intersection_volume
+from hocontact.utils.disjointnessutils import region_disjointness_metric
 from joblib import Parallel, delayed
-import traceback
-import time
-import shutil
+from liegroups import SO3
+from manopth.anchorutils import masking_load_driver
+from manopth.quatutils import angle_axis_to_quaternion, quaternion_to_angle_axis
+from termcolor import colored, cprint
 
 
 def collapse_res_list(res_list_list):

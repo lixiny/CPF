@@ -154,9 +154,9 @@ We create a `FHBExample` dataset in `hocontact/hodatasets/fhb_example.py` that o
 Notice: this demo requires active screen for visualizing. Press `q` in the "runtime hand" window to start fitting.
 
 ```shell
-# recommend 1 GPU
+# Only support single GPU !
 $ python scripts/run_demo.py \
-    --gpu ${GPU_ID} \
+    --gpu 0 \
     --init_ckpt CPF_checkpoints/picr/fhb/checkpoint_200.pth.tar \
     --honet_mano_fhb_hand
 ```
@@ -213,7 +213,7 @@ $ python scripts/eval_geo.py \
 ### HO3Dv1
 dump:
 ```shell
-# recomment 2 GPUs
+# recommend 2 GPUs
 $ python scripts/dump_picr_res.py  \
     --gpu ${GPU_ID} \
     --dist_master_addr localhost \
@@ -271,7 +271,7 @@ dump:
 ```shell
 # recommend 2 GPUs
 $ python scripts/dump_picr_res.py  \
-    --gpu ${GPU_ID} \
+    --gpu 0,1 \
     --dist_master_addr localhost \
     --dist_master_port 12356 \
     --exp_keyword ho3dofficial \
